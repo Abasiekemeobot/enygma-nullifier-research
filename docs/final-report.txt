@@ -1,0 +1,120 @@
+ENYGMA TREE-BOUND NULLIFIER INVESTIGATION
+CONSOLIDATED TECHNICAL REPORT
+Date: 4 November 2026
+
+1. RESEARCH QUESTION
+
+Does Enygma consistently bind Poseidon-based nullifiers to the correct Merkle tree and leaf index across native Go code, Gnark circuits, client proof construction, proof handlers, and Solidity vault validation?
+
+2. TARGET AND METHODOLOGY
+
+Target repository: /workspaces/Enygma
+Target branch: main
+Target commit: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+The investigation combined source-code inspection, native Go probes, circuit tests using BN254 Groth16 and PLONK, mocked client proof-request tests, and handler tests using real Groth16 proof verification.
+
+The expected tree-bound nullifier index is:
+globalIdx = treeNumber * 2^treeDepth + pathIndex
+nullifier = Poseidon(secretKey, globalIdx)
+
+3. NATIVE CODE AND CIRCUIT FINDINGS
+
+3.1 Native nullifier helper
+Source: enygma_dvp/src/core/utils.go, GetNullifierWithTree.
+The helper calculates the global index from the supplied tree number, tree capacity, and path index. In the depth-2 probe, it returned a nullifier for path index 4 without reporting an error, although valid indices are 0 through 3.
+Experiment: EXP-NF-002.
+
+3.2 Circuit path-index enforcement
+Source: enygma_dvp/gnark_circuits/primitives/Nullifier.go.
+The tested circuit rejected path index 4 at tree depth 2 under both BN254 Groth16 and BN254 PLONK.
+Experiment: EXP-NF-001.
+
+3.3 Merkle tree rollover
+Source: enygma_dvp/src/core/merkle.go.
+The depth-2 tree held four leaves. The proof for leaf 101 identified tree 0. After rollover, the proof for leaf 104 identified tree 1. The originating tree number was preserved in the tested historical proof.
+Experiment: EXP-NF-003.
+
+4. CLIENT-SIDE PROOF CONSTRUCTION FINDINGS
+
+Four client methods were examined: DvPInitiatorProof, DvPInitiatorProofFromSalts, ZkDvpInitiateSwap, and DvPDestinationProof.
+
+In the tested scenarios, the Merkle proof identified tree 1 while the caller supplied tree number 0. The client derived the nullifier using the supplied tree number while constructing the request with the Merkle proof root and path.
+
+The mismatch was reproduced at the proof-request boundary using mocked proof endpoints. The tests returned successfully, but the mock endpoints supplied dummy proof data.
+
+Experiments: EXP-NF-004, EXP-NF-005, EXP-NF-006, and EXP-NF-007.
+
+Interpretation: The examined client methods do not enforce equality between the caller-supplied tree number and the tree number recorded in the Merkle proof before constructing the proof request.
+
+Limitation: These experiments do not establish successful cryptographic proof generation, handler acceptance, on-chain execution, double-spending, or unauthorized asset movement.
+
+5. REAL GROTH16 HANDLER VERIFICATION
+
+5.1 Initiator handler
+Source: enygma_dvp/gnark_circuits/server/circuits/dvpInit/handler_test.go.
+The test used real Groth16 proof verification.
+Case A: Tree 1 with a tree-1 nullifier was accepted.
+Case B: Tree 0 with a tree-1 nullifier was rejected.
+Case C: Tree 0 with a tree-0 nullifier was accepted using the same Merkle root and path.
+Experiment: EXP-NF-008.
+
+5.2 Destination handler
+Source: enygma_dvp/gnark_circuits/server/circuits/dvpDestination/handler_test.go.
+The same three cases produced the same acceptance and rejection pattern under real Groth16 verification.
+Experiment: EXP-NF-009.
+
+INTERPRETATION:
+The tested circuits constrain the nullifier using the supplied tree number and independently constrain the Merkle path against the supplied root. The circuit does not independently establish that the supplied root belongs to the supplied tree number.
+
+LIMITATION:
+These are handler-level cryptographic verification results. They do not establish that a Solidity vault accepts a wrong-tree root or that an invalid transaction can settle on-chain.
+
+6. SOLIDITY ROOT AND VAULT VALIDATION
+
+6.1 Tree-specific root history
+Source: enygma_dvp/contracts/core/contracts/vaults/Merkle.sol.
+The root-history mapping is keyed by tree number and Merkle root. The isValidRoot function checks the supplied root against the history associated with the supplied tree number.
+
+6.2 Abstract vault validation
+Source: AbstractCoinVault.sol.
+verifyRoot delegates to isValidRoot using the supplied tree number and root.
+
+6.3 Vault receipt validation
+The examined ERC20, Enygma ERC20, ERC1155, and ERC721 vault implementations perform tree-specific root validation and tree-scoped nullifier checks.
+
+6.4 ERC721 legacy proof restriction
+The ERC721 vault restricts the legacy tree-independent proof type to tree zero. This is a relevant safeguard because its legacy nullifier formula does not incorporate the tree number.
+
+INTERPRETATION:
+Solidity source contains a downstream tree-specific validation boundary that is separate from the circuit-level checks.
+
+LIMITATION:
+These findings are based on source inspection. A runtime test demonstrating rejection of a wrong-tree root by a deployed or locally executed vault was not completed.
+
+7. SECURITY ASSESSMENT AND RECOMMENDATIONS
+
+CLASSIFICATION:
+Client-side tree-number consistency/invariant gap, with circuit-level separation between nullifier binding and Merkle-root binding.
+
+ESTABLISHED:
+The native helper lacks explicit path-index range validation in the tested case.
+The tested circuits reject out-of-range path indices.
+Four client proof methods reproduce a mismatch between the caller-supplied tree number and the Merkle proof tree number.
+Initiator and destination handlers verify nullifiers against the supplied tree number while independently verifying the Merkle path against the supplied root.
+Solidity source contains tree-specific root-history validation and tree-scoped nullifier checks.
+
+NOT ESTABLISHED:
+Successful exploitation of the client-side mismatch.
+Double-spending or unauthorized asset movement.
+Invalid on-chain settlement.
+Runtime rejection of a wrong-tree root by a deployed or locally executed Solidity vault.
+
+RECOMMENDATIONS:
+1. Enforce equality between the caller-supplied tree number and merkleProof.TreeNumber before constructing proof requests.
+2. Add explicit native path-index validation for consistent API-level input handling.
+3. Add Solidity runtime tests proving that a root registered under one tree number is rejected when submitted with another tree number.
+4. Keep circuit, client, and contract invariants covered by regression tests.
+
+FINAL CONCLUSION:
+The investigation demonstrates a reproducible client-side consistency gap and a separation between circuit-level nullifier verification and tree-specific root validation. The inspected Solidity source contains a downstream tree-specific root-validation mechanism, but runtime enforcement and exploitability have not been demonstrated. This is not a confirmed double-spend vulnerability.

@@ -1,0 +1,18 @@
+FILES:
+enygma_dvp/contracts/core/contracts/vaults/Merkle.sol
+enygma_dvp/contracts/core/contracts/vaults/AbstractCoinVault.sol
+
+ROOT REGISTRATION:
+Merkle.sol records roots under rootHistory[treeNumber][merkleRoot].
+The newTree() function increments treeNumber during rollover.
+
+ROOT VALIDATION:
+Merkle.sol isValidRoot(treeNumber, merkleRoot) checks the tree-specific mapping.
+AbstractCoinVault.sol verifyRoot(treeNumber, root) delegates to isValidRoot().
+
+INTERPRETATION:
+The Solidity source implements tree-specific root validation.
+
+LIMITATION:
+Wrong-tree root rejection has not been tested against a deployed or locally executed Solidity contract.
+Source inspection is not runtime verification.

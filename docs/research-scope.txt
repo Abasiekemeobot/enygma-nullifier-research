@@ -1,0 +1,12 @@
+RESEARCH QUESTION
+Does Enygma consistently bind Poseidon-based nullifiers to the correct Merkle tree and leaf index across native Go code, Gnark circuits, client proof construction, proof handlers, and Solidity vault validation?
+
+EXPECTED FORMULA
+globalIdx = treeNumber * 2^treeDepth + pathIndex
+nullifier = Poseidon(secretKey, globalIdx)
+
+SECURITY BOUNDARY
+The investigation establishes client-side consistency gaps and circuit/root binding separation.
+Solidity source contains tree-specific root validation.
+Runtime rejection of a wrong-tree root has not been tested.
+No exploitable double-spend or invalid settlement has been demonstrated.

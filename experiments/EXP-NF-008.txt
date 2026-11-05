@@ -1,0 +1,14 @@
+FILE: enygma_dvp/gnark_circuits/server/circuits/dvpInit/handler_test.go
+FUNCTION: TestHandler_TreeNumberAndMerkleRootIndependenceProbe
+EXPERIMENT: EXP-NF-008
+PROOF TYPE: Real Groth16 proof verification
+CASE A: Tree 1 with tree-1 nullifier was accepted.
+CASE B: Tree 0 with tree-1 nullifier was rejected.
+CASE C: Tree 0 with tree-0 nullifier was accepted using the same Merkle root and path.
+RESULT: PASS
+INTERPRETATION:
+The handler verifies that the nullifier matches the supplied tree number.
+The circuit independently verifies the Merkle path against the supplied root.
+The experiment demonstrates that the circuit does not independently bind that root to the supplied tree number.
+LIMITATION:
+This is a handler-level cryptographic verification result, not proof of successful on-chain exploitation or settlement.

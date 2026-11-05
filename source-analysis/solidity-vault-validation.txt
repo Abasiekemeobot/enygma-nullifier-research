@@ -1,0 +1,18 @@
+FILES:
+EnygmaErc20CoinVault.sol
+Erc20CoinVault.sol
+Erc1155CoinVault.sol
+Erc721CoinVault.sol
+
+OBSERVATIONS:
+ERC20 vault validation checks Merkle roots using the statement tree number.
+ERC20 vault validation checks spent nullifiers scoped to the statement tree number.
+ERC1155 vault validation also checks roots and nullifiers by tree number.
+ERC721 checks the root and nullifier using the supplied tree number.
+ERC721 restricts its legacy tree-independent proof type to tree zero.
+
+INTERPRETATION:
+The examined Solidity vault source contains tree-specific validation controls.
+
+LIMITATION:
+These findings are based on source inspection. Runtime behaviour and exploitability remain unverified.

@@ -1,0 +1,13 @@
+FILE: enygma_dvp/src/core/prover_dvp.go
+FUNCTION: DvPDestinationProof()
+EXPERIMENT: EXP-NF-007
+OBSERVED CONDITION:
+The Merkle proof recorded tree number 1.
+The caller supplied tree number 0.
+The method derived the nullifier using the caller-supplied tree number.
+The submitted payload contained tree number 0 and the Merkle proof root from tree 1.
+RESULT:
+The mismatch was reproduced at the client request boundary.
+The proof endpoint was mocked and returned a dummy proof.
+LIMITATION:
+This test does not demonstrate successful real proof generation, handler acceptance, or on-chain settlement.

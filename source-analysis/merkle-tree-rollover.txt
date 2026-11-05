@@ -1,0 +1,11 @@
+FILE: enygma_dvp/src/core/merkle.go
+EXPERIMENT: EXP-NF-003
+CONFIGURATION:
+Tree depth: 2
+Tree capacity: 4 leaves
+Inserted leaves: 101, 102, 103, 104
+OBSERVATIONS:
+Leaf 101 produced a proof with tree number 0 and path index 0.
+After rollover, leaf 104 produced a proof with tree number 1 and path index 0.
+INTERPRETATION:
+The native Merkle proof records the historical tree number, which is required to derive the tree-bound global index.

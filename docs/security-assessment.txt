@@ -1,0 +1,26 @@
+SECURITY ASSESSMENT
+
+CLASSIFICATION:
+Client-side tree-number consistency/invariant gap, with circuit-level separation between nullifier binding and Merkle-root binding.
+
+ESTABLISHED:
+1. The native nullifier helper does not explicitly validate the path-index range.
+2. The tested Gnark circuits reject out-of-range path indices.
+3. Native Merkle proofs preserve their historical tree number.
+4. Four client proof methods reproduced a mismatch between the proof tree and caller-supplied tree number.
+5. Initiator and destination handlers verified real Groth16 proofs. The tests demonstrated that nullifier derivation is bound to the supplied tree number, while Merkle-root/path verification is performed independently.
+6. Solidity source contains tree-specific root and nullifier validation.
+
+NOT ESTABLISHED:
+1. Successful exploitation of the client-side mismatch.
+2. Double-spending or unauthorized asset movement.
+3. Invalid settlement on-chain.
+4. Runtime rejection of a wrong-tree root by a deployed or locally executed Solidity vault.
+
+RECOMMENDED REVIEW:
+Client methods should enforce equality between the caller-supplied tree number and the Merkle proof tree number before constructing proof requests.
+Review native path-index validation for consistent API-level input checks.
+Complete Solidity runtime tests for wrong-tree root rejection before making end-to-end security claims.
+
+FINAL CONCLUSION:
+The investigation demonstrates a reproducible client-side consistency gap and a separation between circuit-level nullifier verification and tree-specific root validation. The inspected Solidity source contains a downstream tree-specific root-validation mechanism, but runtime enforcement and exploitability have not been demonstrated. This is not a confirmed double-spend vulnerability.

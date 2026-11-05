@@ -1,0 +1,22 @@
+CLIENT-SIDE TREE-NUMBER CONSISTENCY ANALYSIS
+
+PRIMARY SOURCE: enygma_dvp/src/core/prover_dvp.go
+
+DvPInitiatorProof:
+Lines 300-302: obtains the Merkle path index and derives the nullifier using caller-supplied stTreeNumber.
+Lines 332-353: constructs the proof request using caller-supplied stTreeNumber and the Merkle proof root and path.
+Lines 355 onward: submits the request to the initiator proof endpoint.
+
+DvPDestinationProof:
+Lines 537-539: obtains the Merkle path index and derives the nullifier using caller-supplied stTreeNumber.
+Lines 553-571: constructs the proof request using caller-supplied stTreeNumber and the Merkle proof root and path.
+Lines 573 onward: submits the request to the destination proof endpoint.
+
+OBSERVATION:
+The examined methods do not check that caller-supplied stTreeNumber equals merkleProof.TreeNumber before constructing the request.
+
+EXPERIMENTAL CORRELATION:
+EXP-NF-004 through EXP-NF-007 reproduced this mismatch at the client request boundary using mocked proof endpoints.
+
+EVIDENCE LIMITATION:
+The source and request-level tests establish a client-side consistency gap. They do not independently establish successful settlement or asset movement.

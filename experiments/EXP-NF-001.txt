@@ -1,0 +1,9 @@
+EXPERIMENT: EXP-NF-001
+TITLE: Gnark circuit path-index range enforcement
+TEST: TestNullifierPathIndexOutOfRangeProbe
+CONFIGURATION: Tree depth 2; path index 4
+EXPECTED: Reject an index outside the valid range 0 to 3.
+OBSERVED: Invalid witness rejected.
+BACKENDS: BN254 Groth16 and BN254 PLONK.
+RESULT: PASS
+LIMITATION: This establishes circuit-level range enforcement, not native helper validation or transaction security.

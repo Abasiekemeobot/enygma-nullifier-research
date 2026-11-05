@@ -1,0 +1,14 @@
+FILE: enygma_dvp/src/core/utils.go
+FUNCTION: GetNullifierWithTree
+OBSERVATION:
+The helper calculates capacity as 2^treeDepth.
+It calculates globalIdx as treeNumber * capacity + pathIndex.
+It passes the resulting values to Poseidon.
+No explicit pathIndex range validation is present in the examined function.
+
+EXPERIMENT: EXP-NF-002
+At tree depth 2, path index 4 was supplied.
+The helper returned a nullifier hash without an error.
+
+LIMITATION:
+This establishes helper-level behaviour only. It does not establish that an invalid index can pass circuit verification or be used in a successful transaction.

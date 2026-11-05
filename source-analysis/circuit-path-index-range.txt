@@ -1,0 +1,12 @@
+FILE: enygma_dvp/gnark_circuits/primitives/Nullifier.go
+EXPERIMENT: EXP-NF-001
+OBSERVATION:
+The circuit uses a depth-constrained binary representation of the path index.
+At depth 2, valid indices are 0 through 3.
+An index of 4 was rejected.
+TESTED BACKENDS:
+BN254 Groth16
+BN254 PLONK
+RESULT: Both backends rejected the invalid witness.
+INTERPRETATION:
+The circuit enforces a path-index range that the examined native helper does not explicitly enforce.

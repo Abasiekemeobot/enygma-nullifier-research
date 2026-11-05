@@ -1,0 +1,8 @@
+EXPERIMENT: EXP-NF-003
+TITLE: Native Merkle tree rollover and historical proof identification
+SOURCE: enygma_dvp/src/core/merkle.go
+CONFIGURATION: Tree depth 2; capacity 4; leaves 101, 102, 103, and 104.
+OBSERVED: Leaf 101 produced a proof for tree 0, path index 0. After rollover, leaf 104 produced a proof for tree 1, path index 0.
+RESULT: PASS - historical proof generation preserved the originating tree number.
+SECURITY RELEVANCE: The proof tree number is required to derive the correct global leaf index for tree-bound nullifiers.
+LIMITATION: This establishes native Merkle proof behaviour in the tested scenario. It does not establish persistence correctness or transaction-level security.

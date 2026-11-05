@@ -1,0 +1,8 @@
+Target repository: /workspaces/Enygma
+Branch: main
+Target commit: a43586596644dd035ecd9e28ce6bc9022c1dec62
+Working tree at investigation: three experimental modifications/untracked files
+Modified: enygma_dvp/gnark_circuits/server/circuits/dvpDestination/handler_test.go
+Modified: enygma_dvp/gnark_circuits/server/circuits/dvpInit/handler_test.go
+Untracked: enygma_dvp/src/core/nullifier_tree_payload_probe_test.go
+Preservation note: experimental changes must not be reset, cleaned, or deleted.

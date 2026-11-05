@@ -1,0 +1,9 @@
+EXPERIMENT: EXP-NF-002
+TITLE: Native nullifier helper path-index validation
+SOURCE: enygma_dvp/src/core/utils.go
+FUNCTION: GetNullifierWithTree
+CONFIGURATION: Tree depth 2; tree number 0; path indices 3 and 4.
+EXPECTED: Reject path index 4 because the valid range is 0 to 3.
+OBSERVED: The helper returned a nullifier for both indices 3 and 4 without an error.
+RESULT: PASS - missing range validation reproduced.
+LIMITATION: This is a native helper-level finding. It does not establish that an invalid index can pass circuit verification or cause an invalid transaction.
