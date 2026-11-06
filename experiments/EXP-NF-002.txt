@@ -7,3 +7,25 @@ EXPECTED: Reject path index 4 because the valid range is 0 to 3.
 OBSERVED: The helper returned a nullifier for both indices 3 and 4 without an error.
 RESULT: PASS - missing range validation reproduced.
 LIMITATION: This is a native helper-level finding. It does not establish that an invalid index can pass circuit verification or cause an invalid transaction.
+
+PERMANENT REPRODUCTION:
+DATE: 2026-11-05
+TEST FILE: enygma_dvp/src/core/nullifier_native_reproduction_test.go
+TEST: TestEXP_NF_002_NativeNullifierPathIndexRange
+COMMAND:
+go test ./core -run '^TestEXP_NF_002_NativeNullifierPathIndexRange$' -v
+
+OUTPUT:
+=== RUN   TestEXP_NF_002_NativeNullifierPathIndexRange
+depth=2 capacity=4 pathIndex=4 globalIdx=4 nullifier=1062282711034314051251801815251415535473846128924009621447282066991324363708
+--- PASS: TestEXP_NF_002_NativeNullifierPathIndexRange (0.00s)
+PASS
+
+INDEPENDENT CHECK:
+The returned value matched a direct Poseidon calculation using secret key 12345 and global index 4.
+
+INTERPRETATION:
+The permanent reproduction confirms that the native helper accepts path index 4 for a depth-2 tree and returns the expected Poseidon hash without an error.
+
+EVIDENCE LIMIT:
+This rerun specifically tests index 4. It does not independently rerun the earlier index-3 control. It establishes no circuit-level acceptance or transaction-level exploitability.

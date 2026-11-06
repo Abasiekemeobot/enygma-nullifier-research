@@ -1,0 +1,46 @@
+EXP-NF-011: SOLIDITY NULLIFIER STORAGE TREE ISOLATION
+
+DATE: 2026-11-06
+TARGET REPOSITORY: /workspaces/Enygma
+TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+HYPOTHESIS
+The Solidity Merkle implementation stores nullifier state separately
+for each tree number, allowing the same numeric nullifier to be
+recorded independently in different tree namespaces.
+
+TEST
+A local Hardhat runtime test deployed MerkleRootHistoryHarness and
+RuntimeMockPoseidon. The harness exposed test wrappers around the
+inherited nullifier storage functions.
+
+Test nullifier: 777
+
+SEQUENCE AND ASSERTIONS
+1. Record nullifier 777 under tree 0.
+2. Confirm it is spent under tree 0.
+3. Confirm it is not spent under tree 1.
+4. Record the same nullifier 777 under tree 1.
+5. Confirm it remains spent under tree 0.
+6. Confirm it is now also spent under tree 1.
+
+OBSERVED RESULT
+Tree 0 spent state: true
+Tree 1 spent state: true
+
+RESULT
+PASS. The same numeric nullifier was independently recorded in
+both tree namespaces. Recording it under tree 0 did not make it
+spent under tree 1.
+
+LIMITATIONS
+This test exercises inherited nullifier storage through a test
+harness. It does not test nullifier derivation, proof verification,
+or complete DvP settlement.
+
+REPRODUCTION
+cd /workspaces/Enygma/enygma_dvp
+npx hardhat test --no-compile test/merkle-root-history.test.js
+
+The test file contains three tests; this experiment corresponds to
+the second test in the suite.

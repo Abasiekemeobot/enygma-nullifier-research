@@ -1,0 +1,179 @@
+RESEARCH ENVIRONMENT AND RUNTIME-TEST LIMITATIONS
+DATE: 2026-11-05
+
+1. REPOSITORY TARGET
+
+Target repository: /workspaces/Enygma
+Pinned target commit:
+a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+Independent research repository:
+ /workspaces/enygma-nullifier-research
+
+Research repository base commit:
+19010cd
+Add Enygma tree-bound nullifier research and experiments
+
+2. OBSERVED RUNTIME VERSIONS
+
+Go runtime:
+go version go1.27.3 linux/amd64
+
+Go module directive:
+go 1.26.8
+
+Node.js:
+v24.22.2
+
+npm:
+11.19.1
+
+3. TARGET PROJECT CONFIGURATION
+
+Package manifest: enygma_dvp/package.json
+
+Declared dependency ranges:
+- hardhat: ^2.28.6
+- ethers: ^5.8.0
+- @openzeppelin/contracts: ^4.9.6
+- circomlibjs: ^0.1.7
+- @nomiclabs/hardhat-ethers: ^2.2.3
+- @nomiclabs/hardhat-etherscan: ^3.1.8
+- hardhat-artifactor: ^0.2.0
+- hardhat-docgen: ^1.3.0
+- hardhat-gas-reporter: ^2.3.0
+- hardhat-tracer: ^3.4.0
+
+These are manifest declarations, not verified installed package versions.
+
+Hardhat configuration: enygma_dvp/hardhat.config.js
+
+Observed Solidity configuration:
+- compiler version: 0.8.24
+- viaIR: true
+- optimizer enabled: true
+- optimizer runs: 1600
+- allowUnlimitedContractSize: true
+
+4. OBSERVED COMPILATION PREREQUISITES
+
+The following directories were absent at inspection time:
+- enygma_dvp/node_modules
+- enygma_dvp/artifacts
+- enygma_dvp/cache
+- enygma_dvp/test/node_modules
+
+Command availability:
+- solc: unavailable
+- forge: unavailable
+- cast: unavailable
+- anvil: unavailable
+- podman: unavailable
+- docker: available
+
+Docker image inventory:
+No local images were listed.
+
+5. RUNTIME-TEST STATUS — 5 NOVEMBER 2026
+
+At the time of the 5 November 2026 inspection, Solidity runtime
+validation of the tree-number/root mismatch was BLOCKED, not failed.
+This was an environment limitation at that date, not a failed test.
+
+The inspected environment did not contain:
+- an installed Hardhat dependency tree,
+- generated Hardhat artifacts or cache,
+- an available standalone Solidity compiler,
+- Foundry runtime tools,
+- or a local Docker image that could supply a prebuilt test environment.
+
+No dependency installation, compiler download, Docker image pull,
+Hardhat compilation, or Solidity runtime test was performed during
+this inspection.
+
+6. IMPORTANT PROJECT-SPECIFIC COMPILATION CAUTION
+
+The target project's docs/run-tests.md warns that running
+npx hardhat compile can overwrite Poseidon artifacts with placeholder
+implementations. The documented Poseidon regeneration step must be
+considered before any future compilation attempt.
+
+Poseidon.sol source comments also warn that placeholder bodies are
+used and EVM bytecode is injected during deployment using circomlibjs.
+
+Therefore, a future runtime-test setup must preserve the project's
+Poseidon artifact-generation requirements. A generic successful
+Solidity compile alone would not establish that the cryptographic
+test environment is correctly configured.
+
+7. EVIDENCE BOUNDARY
+
+The research includes source inspection of Solidity root-history,
+nullifier, vault receipt, and DvP settlement logic.
+
+At the time of the 5 November 2026 inspection, the research did not
+include a Solidity EVM execution demonstrating acceptance or rejection
+of a proof whose supplied tree number differs from the tree associated
+with its Merkle root. The runtime tests added on 6 November 2026 are
+documented in Section 9.
+
+No conclusion about successful invalid settlement, double-spending,
+or unauthorized asset movement is supported by this environment
+inspection.
+
+8. REPRODUCIBILITY NOTE
+
+The versions and directory states above are observations from
+2026-11-05. Dependency ranges may resolve differently in a future
+environment. Any future runtime test should record the exact resolved
+package versions, compiler build, commands, raw outputs, and generated
+artifact provenance.
+
+
+9. RUNTIME TESTING UPDATE — 6 NOVEMBER 2026
+
+The earlier environment observations in this document describe the
+state inspected on 5 November 2026. Solidity runtime testing subsequently
+became possible after the project dependencies were installed.
+
+Environment and execution:
+- Node.js: v24.22.2
+- Hardhat: 2.29.1
+- Solidity compiler configuration: 0.8.24, optimizer enabled with
+  1600 runs, viaIR enabled.
+- npm ci completed successfully.
+- The Poseidon artifacts were regenerated using:
+  node scripts/regen_poseidon.js
+- Hardhat test execution used:
+  npx hardhat test --no-compile test/merkle-root-history.test.js
+
+Runtime result:
+Three Solidity runtime tests passed.
+
+EXP-NF-010 tested tree-specific Merkle root-history lookup after
+rollover using the inherited Merkle implementation and a local harness.
+
+EXP-NF-011 tested independent tree-scoped nullifier storage using
+the same numeric nullifier under two tree numbers.
+
+EXP-NF-012 deployed the production EnygmaErc20CoinVault and exercised
+nullifyFromReceipt to test selection of the nullifier namespace from
+the receipt statement's tree number.
+
+The first two tests used RuntimeMockPoseidon, which computes
+keccak256 modulo the BN254 scalar field. It is not production Poseidon.
+
+The production vault receipt test used a nonzero placeholder root and
+zero proof coordinates. It did not establish complete receipt proof
+validation or end-to-end DvP settlement.
+
+The test command completed with:
+3 passing (361ms)
+
+Hardhat emitted duplicate-definition warnings for
+InvalidNumberOfOutputs(). These warnings were nonfatal; the tests passed.
+
+The successful runtime tests supersede the earlier statement that
+Solidity runtime testing was blocked. They do not supersede the
+limitations concerning complete production proof validation and
+end-to-end mismatched-tree settlement.

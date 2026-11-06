@@ -14,5 +14,150 @@ ERC721 restricts its legacy tree-independent proof type to tree zero.
 INTERPRETATION:
 The examined Solidity vault source contains tree-specific validation controls.
 
-LIMITATION:
-These findings are based on source inspection. Runtime behaviour and exploitability remain unverified.
+ADDITIONAL SOURCE ANALYSIS
+DATE: 2026-11-05
+
+1. TREE-SCOPED ROOT AND NULLIFIER VALIDATION
+
+The shared Merkle implementation stores root history by tree number and
+root. Nullifier state is also scoped by tree number.
+
+The examined ERC20, Enygma ERC20, and ERC1155 validation functions use
+the tree number contained in the proof statement when checking roots
+and nullifiers.
+
+The ERC721 validation function also checks the supplied tree number.
+Its legacy ownership-proof branch explicitly rejects nonzero tree numbers.
+Its DvP destination proof uses a separate verifier branch. The legacy
+restriction must not be generalized to the DvP destination branch.
+
+2. PENDING RECEIPT AND NULLIFIER LOCKING
+
+SOURCE:
+AbstractCoinVault.sol
+EnygmaDvp.sol
+
+submitPartialSettlement first calls the selected vault's
+checkReceiptConditions and checks asset-group membership.
+
+For the first leg, the DvP contract stores pending transaction metadata
+and calls addPendingProofReceipt.
+
+addPendingProofReceipt stores the receipt and locks each input nullifier
+using the tree number and nullifier contained in the receipt statement.
+
+3. SECOND-LEG SETTLEMENT
+
+When a matching second leg arrives, submitPartialSettlement retrieves
+the pending first-leg receipt using commitB and unlocks its input
+nullifiers.
+
+It then calls _settleOnGroupPair with both receipts.
+
+The internal settlement function checks the message and commitment
+relationships, counter-vault addresses, and asset-group membership.
+It calls checkReceiptConditions for both receipts.
+
+The settlement sequence then nullifies inputs from both receipts before
+inserting either receipt's output commitments.
+
+The inspected EVM transaction is atomic. A revert during settlement
+reverts the preceding state changes in that transaction.
+
+4. ASSET-GROUP MEMBERSHIP
+
+SOURCE:
+AssetGroup.sol
+
+isMemberFromProofReceipt reads the final statement element as the
+asset-group root and checks isValidRoot(0, assetGroupMerkleRoot).
+
+The source includes a TODO to connect the tree number.
+
+However, the function returns the logical OR of vault membership and
+token-root membership. A vault already registered as a member can
+satisfy this check without the asset-group root check succeeding.
+
+The tree-zero asset-group root check is therefore not a universal
+requirement for every membership result. It is separate from the
+coin-vault note-tree root and nullifier checks.
+
+5. SOLIDITY RUNTIME EXPERIMENTS
+DATE: 2026-11-06
+
+Three Hardhat runtime tests passed using the target repository's
+Solidity contracts and a local test harness.
+
+EXP-NF-010: MERKLE ROOT HISTORY ISOLATION
+
+The test exercised the inherited Merkle implementation through
+MerkleRootHistoryHarness. It inserted four leaves into a depth-2 tree,
+causing rollover from tree 0 to tree 1.
+
+The test confirmed:
+- The tree-0 root was valid under tree number 0.
+- The tree-1 root was valid under tree number 1.
+- The tree-1 root was invalid under tree number 0.
+- The tree-0 root was invalid under tree number 1.
+
+This is runtime evidence that the tested Merkle root-history lookup
+isolates roots by tree number after rollover.
+
+The harness used RuntimeMockPoseidon, whose hash functions use
+keccak256 modulo the BN254 scalar field. This is not production Poseidon
+and does not establish cryptographic equivalence.
+
+EXP-NF-011: NULLIFIER STORAGE TREE ISOLATION
+
+The test stored numeric nullifier 777 under tree 0 and confirmed that
+it was marked spent under tree 0 but not tree 1. It then stored the
+same numeric nullifier under tree 1 and confirmed that it was marked
+spent under both tree numbers.
+
+This is runtime evidence that the tested inherited Merkle storage
+keeps nullifier state in separate tree-number namespaces.
+
+The test used the same harness and mock Poseidon environment. It did
+not test nullifier derivation or proof verification.
+
+EXP-NF-012: PRODUCTION VAULT RECEIPT NULLIFIER TREE SELECTION
+
+The test deployed the production EnygmaErc20CoinVault contract and
+called its public nullifyFromReceipt function.
+
+The receipt statement supplied:
+- Tree number at statement index 1.
+- A nonzero placeholder root at statement index 2.
+- Nullifier 777 at statement index 3.
+
+Submitting a receipt with tree number 1 caused the production vault
+to record nullifier 777 under tree 1, not tree 0. Submitting the same
+numeric nullifier with tree number 0 caused it to be recorded under
+tree 0 as well.
+
+This demonstrates that the tested production receipt-processing
+function selects the nullifier namespace using the tree number
+supplied in the receipt statement.
+
+The test supplied placeholder root 12345 and zero proof coordinates.
+It did not exercise complete receipt proof validation, establish that
+the placeholder root was valid, or demonstrate a successful DvP
+settlement.
+
+6. EVIDENCE LIMITATIONS
+
+The runtime tests establish tree-specific root-history lookup in the
+inherited Merkle implementation, tree-scoped nullifier storage, and
+production vault receipt nullifier tree selection.
+
+They do not establish complete production vault proof validation for
+a mismatched tree number and root. The production receipt test called
+nullifyFromReceipt directly with a placeholder nonzero root and zero
+proof coordinates.
+
+No end-to-end test demonstrated acceptance or rejection of a
+mismatched-tree proof through the complete DvP settlement flow.
+No successful exploitation, double-spending, or unauthorized asset
+movement has been demonstrated.
+
+The runtime harness's mock Poseidon is not production Poseidon.

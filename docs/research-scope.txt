@@ -1,12 +1,73 @@
 RESEARCH QUESTION
-Does Enygma consistently bind Poseidon-based nullifiers to the correct Merkle tree and leaf index across native Go code, Gnark circuits, client proof construction, proof handlers, and Solidity vault validation?
+
+Does Enygma consistently bind Poseidon-based nullifiers to the correct
+Merkle tree and leaf index across native Go code, Gnark circuits, client
+proof construction, proof handlers, and Solidity vault validation?
 
 EXPECTED FORMULA
+
 globalIdx = treeNumber * 2^treeDepth + pathIndex
 nullifier = Poseidon(secretKey, globalIdx)
 
+INVESTIGATION SCOPE
+
+The investigation covers native nullifier derivation, circuit path-index
+constraints, Merkle rollover, client proof construction, Groth16 handler
+verification, demo rollover reachability, Solidity root-history
+validation, vault nullifier handling, and DvP settlement.
+
+Twelve experiments are recorded in evidence/experiment-register.txt.
+Three Solidity runtime experiments were added on 6 November 2026.
+
+DEMO EVIDENCE
+
+Source inspection identifies a path to a mismatched proof request after
+rollover. The demo reconstructs Merkle trees from historical commitment
+events while separately supplying literal tree number zero to the
+initiator and destination proof methods.
+
+This is source-level reachability. No live 256-deposit demonstration or
+live post-rollover proof request was performed.
+
+SOLIDITY AND SETTLEMENT EVIDENCE
+
+Solidity source contains tree-specific note-root history and
+tree-scoped nullifier checks.
+
+Runtime tests demonstrated:
+- Tree-specific root-history lookup after rollover in the inherited
+  Merkle implementation.
+- Independent tree-scoped nullifier storage.
+- Production EnygmaErc20CoinVault receipt processing selecting the
+  nullifier namespace using the tree number in the receipt statement.
+
+The first two runtime tests used a local harness and RuntimeMockPoseidon,
+which uses keccak256 modulo the BN254 scalar field rather than production
+Poseidon.
+
+The production vault receipt test used a nonzero placeholder root and
+zero proof coordinates. It tested nullifier tree selection through
+nullifyFromReceipt, not complete receipt proof validation.
+
+The inspected DvP flow stores and locks the first receipt, retrieves
+and unlocks it for the matching second leg, revalidates both receipts,
+nullifies inputs, and inserts outputs.
+
+Asset-group membership has a separate tree-zero root check, with
+registered-vault membership as an alternative condition.
+
 SECURITY BOUNDARY
-The investigation establishes client-side consistency gaps and circuit/root binding separation.
-Solidity source contains tree-specific root validation.
-Runtime rejection of a wrong-tree root has not been tested.
-No exploitable double-spend or invalid settlement has been demonstrated.
+
+The investigation establishes a reproducible client-side tree-number
+consistency gap and circuit-level separation between nullifier binding
+and Merkle-root/path binding.
+
+The Solidity runtime tests establish specific tree-indexed storage and
+receipt-processing behaviours. They do not demonstrate complete
+production vault proof validation or end-to-end settlement of a
+mismatched-tree proof.
+
+No successful exploitation, double-spending, or unauthorized asset
+movement has been demonstrated.
+
+The findings do not establish a confirmed double-spend vulnerability.

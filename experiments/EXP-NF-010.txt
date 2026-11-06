@@ -1,0 +1,59 @@
+EXP-NF-010: SOLIDITY MERKLE ROOT HISTORY ISOLATION
+
+DATE: 2026-11-06
+TARGET REPOSITORY: /workspaces/Enygma
+TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+HYPOTHESIS
+The Solidity Merkle implementation associates historical roots with
+their originating tree number and rejects a root when queried under
+a different tree number.
+
+TEST
+A local Hardhat runtime test deployed MerkleRootHistoryHarness and
+RuntimeMockPoseidon. The harness inherited the target repository's
+Merkle implementation.
+
+Tree depth: 2
+Inserted leaves: 101, 102, 103, followed by 104.
+The first three leaves filled tree 0 and the fourth insertion caused
+rollover to tree 1.
+
+OBSERVED ROOTS
+Initial root:
+17769024865677238554335941978572900147394428315576385422213676507391942402599
+
+Tree 0 root:
+13366233913191052426331919586362728597749744125430864207742143211634203802139
+
+Tree 1 root:
+21867501317197870814397669789875886841324136772276101549382611703304579730843
+
+OBSERVED TREE NUMBERS
+After first insertion batch: 0
+After rollover: 1
+
+ASSERTIONS
+isValidRoot(0, tree0Root) == true
+isValidRoot(1, tree1Root) == true
+isValidRoot(0, tree1Root) == false
+isValidRoot(1, tree0Root) == false
+
+RESULT
+PASS. The tested Solidity Merkle implementation accepted each root
+under its originating tree number and rejected it under the other
+tree number after rollover.
+
+LIMITATIONS
+RuntimeMockPoseidon uses keccak256 modulo the BN254 scalar field.
+It is a deterministic test double, not the production Poseidon
+permutation. This experiment establishes tree-index isolation in
+the inherited Merkle implementation; it does not establish
+cryptographic equivalence to production Poseidon.
+
+REPRODUCTION
+cd /workspaces/Enygma/enygma_dvp
+npx hardhat test --no-compile test/merkle-root-history.test.js
+
+The test file contains three tests; this experiment corresponds to
+the first test in the suite.

@@ -2,23 +2,81 @@
 
 ## Research question
 
-Does Enygma consistently bind Poseidon-based nullifiers to the correct Merkle tree and leaf index across native Go code, Gnark circuits, client proof construction, proof handlers, and Solidity vault validation?
+Does Enygma consistently bind Poseidon-based nullifiers to the correct
+Merkle tree and leaf index across native Go code, Gnark circuits, client
+proof construction, proof handlers, and Solidity vault validation?
 
 ## Scope
 
-This repository records source analysis and nine experiments conducted against the Enygma repository at commit a43586596644dd035ecd9e28ce6bc9022c1dec62.
+This repository records source analysis and twelve experiments conducted
+against the Enygma repository at commit:
 
-The investigation covers native nullifier derivation, path-index range enforcement, Merkle tree rollover, client proof request construction, Groth16 handler verification, and Solidity root-history and vault validation.
+`a43586596644dd035ecd9e28ce6bc9022c1dec62`
+
+The investigation covers native nullifier derivation, path-index range
+enforcement, Merkle tree rollover, client proof construction, Groth16
+handler verification, demo rollover reachability, Solidity vault and
+DvP settlement logic, and three Solidity runtime experiments.
 
 ## Principal findings
 
-1. The native nullifier helper returned a hash for an out-of-range path index in the tested configuration. See EXP-NF-002.
-2. The tested Gnark circuits rejected that out-of-range index under Groth16 and PLONK. See EXP-NF-001.
-3. Native Merkle proof generation preserved the originating tree number after rollover. See EXP-NF-003.
-4. Four client proof methods reproduced a mismatch between the caller-supplied tree number and the Merkle proof tree number. See EXP-NF-004 through EXP-NF-007.
-5. Initiator and destination handlers verified real Groth16 proofs in controlled tests, demonstrating independent nullifier tree-number binding and Merkle path/root verification. See EXP-NF-008 and EXP-NF-009.
-6. Solidity source uses tree-specific root-history validation and tree-scoped nullifier checks. See source-analysis/solidity-root-history.txt and source-analysis/solidity-vault-validation.txt.
+1. The native nullifier helper returned a hash for the tested out-of-range
+   path index. See EXP-NF-002.
+2. The tested Gnark circuits rejected that out-of-range index under
+   Groth16 and PLONK. See EXP-NF-001.
+3. Native Merkle proof generation preserved the originating tree number
+   after rollover. See EXP-NF-003.
+4. Four client proof methods reproduced a mismatch between the
+   caller-supplied tree number and the Merkle proof tree number.
+   See EXP-NF-004 through EXP-NF-007.
+5. Initiator and destination handlers verified real Groth16 proofs.
+   The tests demonstrated nullifier binding to the supplied tree number
+   and independent Merkle path/root verification.
+   See EXP-NF-008 and EXP-NF-009.
+6. Demo source inspection identified a path to a mismatched proof request
+   after rollover: historical commitment events are replayed into a
+   Merkle tree, while the demo separately supplies literal tree number
+   zero to the initiator and destination proof methods.
+7. Solidity source uses tree-specific root-history validation and
+   tree-scoped nullifier checks.
+8. The inspected DvP flow stores and locks the first receipt, retrieves
+   and unlocks it for the matching second leg, revalidates both receipts,
+   nullifies both inputs, and then inserts output commitments.
+9. Asset-group membership has a separate tree-zero root check, but
+   registered-vault membership is an alternative condition.
+10. A Solidity runtime test confirmed tree-specific root-history lookup
+    after rollover in the inherited Merkle implementation. See EXP-NF-010.
+11. A Solidity runtime test confirmed separate tree-scoped nullifier
+    storage. See EXP-NF-011.
+12. A production vault runtime test confirmed that nullifyFromReceipt
+    selects the nullifier namespace using the receipt tree number.
+    The test used a placeholder root and zero proof coordinates.
+    See EXP-NF-012.
 
 ## Security conclusion
 
-The evidence establishes a reproducible client-side consistency gap and a separation between circuit-level nullifier verification and Merkle-root verification. The inspected Solidity source contains downstream tree-specific root validation. Runtime enforcement and exploitability have not been demonstrated. This investigation does not establish a confirmed double-spend vulnerability.
+The evidence establishes a reproducible client-side tree-number
+consistency gap and a separation between circuit-level nullifier
+verification and Merkle-root/path verification.
+
+The demo findings establish source-level reachability, not a live
+post-rollover proof request. Solidity runtime tests demonstrate
+tree-specific root-history lookup in the inherited Merkle implementation,
+tree-scoped nullifier storage, and production vault receipt nullifier
+tree selection. The production receipt test used a placeholder root
+and zero proof coordinates; complete production vault proof validation
+and end-to-end mismatched-tree settlement remain untested.
+
+No successful exploitation, double-spending, unauthorized asset
+movement, or invalid on-chain settlement has been demonstrated.
+This investigation does not establish a confirmed double-spend
+vulnerability.
+
+## Research records
+
+- `docs/final-report.txt` - consolidated technical findings.
+- `docs/research-scope.txt` - research question and evidence boundary.
+- `docs/security-assessment.txt` - security classification and limitations.
+- `evidence/experiment-register.txt` - experiment index.
+- `experiments/` - experiment records.
+- `source-analysis/` - source-level analysis and call-path findings.

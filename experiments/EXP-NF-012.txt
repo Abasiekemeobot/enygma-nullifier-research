@@ -1,0 +1,89 @@
+EXP-NF-012: PRODUCTION VAULT RECEIPT NULLIFIER TREE SELECTION
+
+DATE: 2026-11-06
+TARGET REPOSITORY: /workspaces/Enygma
+TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+HYPOTHESIS
+The production EnygmaErc20CoinVault receipt-processing function
+records an input nullifier under the tree number supplied in the
+receipt statement.
+
+TEST SUBJECT
+Production contract: EnygmaErc20CoinVault
+Function called: nullifyFromReceipt()
+State queried: isValidNullifier(treeNumber, nullifier)
+
+The test deployed the production vault with the test signer as its
+DVP address, initialized the vault, and called the public
+nullifyFromReceipt function.
+
+RECEIPT ENCODING
+One input was supplied.
+
+For this receipt layout:
+statement[1] = tree number
+statement[2] = root
+statement[3] = nullifier
+
+The test used:
+nullifier = 777
+nonzero placeholder root = 12345
+proof coordinates = zero
+
+SEQUENCE AND ASSERTIONS
+1. Submit a receipt identifying tree 1.
+2. Confirm nullifier 777 is spent under tree 1.
+3. Confirm nullifier 777 is not spent under tree 0.
+4. Submit another receipt with the same nullifier identifying tree 0.
+5. Confirm nullifier 777 is spent under tree 0.
+6. Confirm the tree 1 spent state remains true.
+
+OBSERVED RESULT
+Receipt nullifier: 777
+Tree 0 spent state: true
+Tree 1 spent state: true
+
+RESULT
+PASS. The production vault's receipt-processing function recorded
+the nullifier under the tree number supplied in each receipt.
+
+SOURCE INTERPRETATION
+The inspected AbstractCoinVault._nullifyFromReceipt implementation
+reads the tree number and nullifier from the receipt statement.
+It calls _spendNullifier(treeNumber, nullifier) when the
+corresponding statement root is nonzero.
+
+LIMITATIONS
+This test does not establish that the placeholder root is a valid
+Merkle root. It does not establish that the all-zero proof is
+cryptographically valid. The tested receipt-processing function
+uses a nonzero-root condition as a gate before spending the
+nullifier; this test does not demonstrate root-membership or
+proof verification inside that function.
+
+The experiment demonstrates receipt-driven tree selection for
+nullifier storage. It does not demonstrate acceptance of an invalid
+proof by the complete DvP settlement flow, successful exploitation,
+double-spending, or unauthorized asset movement.
+
+REPRODUCTION
+cd /workspaces/Enygma/enygma_dvp
+npx hardhat test --no-compile test/merkle-root-history.test.js
+
+The test file contains three tests; this experiment corresponds to
+the third test in the suite.
+
+OBSERVED TEST ENVIRONMENT
+Hardhat: 2.29.1
+Node.js: v24.22.2
+Solidity compiler configuration: 0.8.24
+Optimizer: enabled, 1600 runs
+viaIR: true
+
+The command reported:
+3 passing (361ms)
+
+Poseidon regeneration was run before the test command:
+node scripts/regen_poseidon.js
+Output: Poseidon artifacts regenerated

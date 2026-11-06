@@ -1,0 +1,208 @@
+SOURCE ANALYSIS: DEMO ROLLOVER REACHABILITY AND DVP SETTLEMENT
+DATE: 2026-11-05
+TARGET REPOSITORY: /workspaces/Enygma
+TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+1. PURPOSE
+
+Trace whether the normal demo source can reconstruct a Merkle proof from
+a later tree while independently supplying tree number zero to the DvP
+client proof methods. Then trace the Solidity validation, pending-receipt,
+locking, and final settlement sequence.
+
+This is source-level reachability analysis. It is not a live demonstration
+of 256 deposits or successful on-chain exploitation.
+
+2. DEMO MERKLE RECONSTRUCTION
+
+SOURCE:
+enygma_dvp/demo/main.go
+
+Function:
+loadVaultMerkleTree
+
+The function queries Commitment(uint256,uint256) logs for the specified
+vault address, creates a native Merkle tree using NewMerkleTree(merkleDepth),
+and inserts the commitment from each matching event into that tree.
+
+The demo therefore reconstructs the vault's commitment tree from historical
+commitment events rather than reading a supplied tree number from a separate
+persistent tree-state record.
+
+The demo's configured merkleDepth is 8.
+
+3. ROLLOVER BOUNDARY
+
+SOURCE:
+enygma_dvp/demo/main.go
+enygma_dvp/src/core/merkle.go
+enygma_dvp/contracts/core/contracts/vaults/Merkle.sol
+
+At depth 8, nominal capacity is 2^8 = 256 leaves.
+
+The default native NewMerkleTree insertion logic rolls over when the next
+insertion would make the current tree's leaf count reach the capacity.
+The Solidity insertLeaves implementation uses the corresponding condition:
+
+(nextLeafIndex + count) >= (2 ** treeDepth)
+
+For single-leaf deposits, a fresh tree therefore holds 255 leaves in tree 0.
+The 256th insertion triggers rollover and is inserted into tree 1.
+
+This count assumes single-leaf insertions and no other deposits or batch
+insertions into the same vault. Other activity changes the point at which
+rollover occurs.
+
+4. DEMO CLIENT ARGUMENTS
+
+SOURCE:
+enygma_dvp/demo/main.go
+enygma_dvp/src/core/prover_dvp.go
+
+The initiator demo step reconstructs the ERC20 vault Merkle tree and
+generates Alice's Merkle proof. It separately passes big.NewInt(0) as the
+tree-number argument to DvPInitiatorProof.
+
+The destination demo step reconstructs the ERC721 vault Merkle tree and
+generates Bob's Merkle proof. It separately passes big.NewInt(0) as the
+tree-number argument to DvPDestinationProof.
+
+The inspected client methods derive the nullifier using the separately
+supplied tree-number argument. They use the Merkle proof's root and path
+for the corresponding proof-request fields. No equality check between
+the supplied tree number and merkleProof.TreeNumber was observed in the
+examined methods.
+
+Consequently, if the relevant vault's reconstructed proof belongs to tree 1,
+the demo source still supplies tree number zero to the client method.
+
+This is a source-level path to a mismatched proof request after rollover.
+It is not evidence that the generated proof will pass every downstream
+validation stage.
+
+5. DEPOSIT AND DEMO LIFECYCLE
+
+SOURCE:
+enygma_dvp/demo/main.go
+enygma_dvp/scripts/deploy.sh
+enygma_dvp/scripts/cmd/deploy/main.go
+
+The examined demo deposit steps submit one commitment to the ERC20 vault
+and one commitment to the ERC721 vault in their respective deposit calls.
+
+The demo reset endpoint creates a fresh in-memory FlowState. The inspected
+reset implementation does not reset the blockchain, redeploy contracts,
+or clear historical commitment events.
+
+The deployment script deploys new contracts and writes deployment receipts.
+Running the demo again with the same chain and unchanged receipts therefore
+uses the same vault addresses, provided the chain and deployments remain
+available.
+
+Repeated successful demo flows can consequently accumulate commitment
+events in the same vaults. This is a source-level lifecycle observation;
+no 256-flow runtime demonstration was performed.
+
+6. FIRST-LEG PARTIAL SETTLEMENT
+
+SOURCE:
+enygma_dvp/contracts/core/contracts/EnygmaDvp.sol
+enygma_dvp/contracts/core/contracts/vaults/AbstractCoinVault.sol
+
+submitPartialSettlement first calls the selected vault's
+checkReceiptConditions and checks asset-group membership.
+
+For a first-leg initiator receipt, the contract stores pending transaction
+metadata keyed by commitB and calls addPendingProofReceipt.
+
+AbstractCoinVault.addPendingProofReceipt stores the receipt and locks each
+input nullifier using the tree number and nullifier extracted from the
+receipt statement.
+
+The pending-receipt function itself is role-gated. In the inspected normal
+flow, the DvP contract calls it after receipt validation and membership
+checking.
+
+7. SECOND-LEG AND FINAL SETTLEMENT
+
+SOURCE:
+enygma_dvp/contracts/core/contracts/EnygmaDvp.sol
+
+When the matching second leg arrives, submitPartialSettlement checks the
+pending transaction and deadline, retrieves the first receipt using commitB,
+and unlocks that receipt's input nullifiers.
+
+The function then calls _settleOnGroupPair with the two receipts and their
+vault and group identifiers.
+
+The internal settlement function checks the message/commitment relationships,
+checks the counter-vault addresses, checks asset-group membership, and calls
+checkReceiptConditions for both receipts.
+
+It then nullifies the inputs from both receipts before inserting either
+receipt's output commitments.
+
+This is the source-level order observed in the inspected implementation.
+The transaction is atomic under EVM execution: a revert in the transaction
+reverts its preceding state changes as well.
+
+8. ASSET-GROUP MEMBERSHIP TREE NUMBER
+
+SOURCE:
+enygma_dvp/contracts/core/contracts/vaults/AssetGroup.sol
+
+isMemberFromProofReceipt reads the final statement element as the
+asset-group Merkle root and checks isValidRoot(0, assetGroupMerkleRoot).
+
+The source contains the comment:
+TODO:: connect treeNumber
+
+However, the function returns:
+isVaultAMember || isTokenAMember
+
+A vault already registered as a member can therefore satisfy this
+membership check without the asset-group root check succeeding.
+The tree-zero asset-group root check is not a universal requirement for
+every membership result.
+
+This asset-group tree-zero behaviour is separate from the coin-vault
+note-tree root and nullifier checks.
+
+9. TOKEN-SPECIFIC VALIDATION NOTES
+
+The inspected ERC20, Enygma ERC20, and ERC1155 validation paths check
+roots and nullifiers using the tree numbers supplied in their statements.
+No general tree-zero restriction was observed in those examined functions.
+
+The ERC721 legacy ownership proof branch explicitly rejects a nonzero
+tree number. Its DvP destination proof uses a separate verifier branch;
+the legacy restriction must not be generalized to that DvP branch.
+
+Standalone transfer functions contain guards against using DvP message
+receipts outside the DvP settlement path.
+
+10. EVIDENCE BOUNDARIES
+
+ESTABLISHED BY SOURCE INSPECTION:
+- The demo reconstructs vault Merkle trees from historical Commitment events.
+- The demo separately supplies literal tree number zero to the examined
+  initiator and destination proof methods.
+- The default depth-8 tree rollover boundary is 256 leaves.
+- The first-leg DvP path validates and stores a receipt, then locks its
+  input nullifiers.
+- The second-leg path retrieves and unlocks the pending receipt.
+- The final settlement path revalidates both receipts and nullifies inputs
+  before inserting outputs.
+- Asset-group membership has a tree-zero root check with a registered-vault
+  alternative.
+
+NOT ESTABLISHED:
+- A live demo run with 256 successful deposits.
+- A live proof request showing the mismatch after rollover.
+- Solidity runtime acceptance or rejection of the mismatched proof.
+- Successful invalid settlement, double-spending, or unauthorized
+  asset movement.
+
+The findings support a client-side tree-number consistency/invariant gap
+and a source-level path to a mismatched proof request. They do not establish
+an exploitable vulnerability or a confirmed double-spend.

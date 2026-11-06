@@ -13,6 +13,22 @@ AbstractCoinVault.sol verifyRoot(treeNumber, root) delegates to isValidRoot().
 INTERPRETATION:
 The Solidity source implements tree-specific root validation.
 
-LIMITATION:
-Wrong-tree root rejection has not been tested against a deployed or locally executed Solidity contract.
-Source inspection is not runtime verification.
+RUNTIME VERIFICATION — EXP-NF-010:
+
+A Solidity runtime test subsequently exercised the inherited Merkle
+implementation after a depth-2 tree rollover.
+
+The test confirmed that a root registered under tree 0 was accepted
+under tree 0 and rejected under tree 1. A root registered under tree 1
+was accepted under tree 1 and rejected under tree 0.
+
+The test used a local harness and RuntimeMockPoseidon, implemented
+using keccak256 modulo the BN254 scalar field. It therefore verifies
+tree-specific root-history behaviour in the tested implementation,
+not production Poseidon equivalence or the complete production vault
+receipt proof-validation path.
+
+REMAINING LIMITATION:
+
+Complete production vault proof validation using a wrong-tree root,
+and end-to-end mismatched-tree DvP settlement, remain untested.

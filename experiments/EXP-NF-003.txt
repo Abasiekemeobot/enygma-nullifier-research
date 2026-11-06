@@ -6,3 +6,34 @@ OBSERVED: Leaf 101 produced a proof for tree 0, path index 0. After rollover, le
 RESULT: PASS - historical proof generation preserved the originating tree number.
 SECURITY RELEVANCE: The proof tree number is required to derive the correct global leaf index for tree-bound nullifiers.
 LIMITATION: This establishes native Merkle proof behaviour in the tested scenario. It does not establish persistence correctness or transaction-level security.
+
+PERMANENT REPRODUCTION:
+DATE: 2026-11-05
+TEST FILE: enygma_dvp/src/core/nullifier_native_reproduction_test.go
+TEST: TestEXP_NF_003_MerkleProofPreservesTreeNumberAfterRollover
+COMMAND:
+go test ./core -run '^TestEXP_NF_003_MerkleProofPreservesTreeNumberAfterRollover$' -v
+
+CONFIGURATION:
+NewMerkleTree(2); sequentially insert leaves 101, 102, 103, and 104.
+The default tree rolls over before inserting the fourth leaf.
+After rollover, generate a proof for archived leaf 103 and current leaf 104.
+
+OUTPUT:
+=== RUN   TestEXP_NF_003_MerkleProofPreservesTreeNumberAfterRollover
+archived leaf=103 treeNumber=0 root=6681295944299585352116462849618447744059436350546610289663095132669389381032
+current leaf=104 treeNumber=1 root=1445942641203823949947744981699268812994485820642126679651069739136819862361
+--- PASS: TestEXP_NF_003_MerkleProofPreservesTreeNumberAfterRollover (0.00s)
+PASS
+
+ASSERTIONS:
+- One previous tree existed after rollover.
+- The current tree contained one leaf.
+- The archived proof for leaf 103 returned TreeNumber 0 and the archived tree's root.
+- The current proof for leaf 104 returned TreeNumber 1 and the current tree's root.
+
+INTERPRETATION:
+The permanent reproduction confirms that GenerateProof preserves the originating tree number and selects the corresponding root for both an archived leaf and a current leaf in this tested rollover scenario.
+
+EVIDENCE LIMIT:
+This is a native Merkle implementation test. It does not establish persistence correctness, Solidity runtime acceptance, or transaction-level security.

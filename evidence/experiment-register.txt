@@ -1,10 +1,13 @@
 ID | Experiment | Result
 EXP-NF-001 | Circuit path-index range | PASS: out-of-range index rejected
 EXP-NF-002 | Native nullifier helper range | PASS: helper returned hash for out-of-range index
-EXP-NF-003 | Native Merkle tree rollover | PASS: historical proof identified tree 1
+EXP-NF-003 | Native Merkle tree rollover | PASS: archived leaf 103 identified as tree 0 and current leaf 104 as tree 1, with corresponding roots
 EXP-NF-004 | DvPInitiatorProof payload mismatch | PASS: mismatch reproduced with mocked proof endpoint
 EXP-NF-005 | DvPInitiatorProofFromSalts payload mismatch | PASS: mismatch reproduced with mocked proof endpoint
 EXP-NF-006 | ZkDvpInitiateSwap payload mismatch | PASS: mismatch reproduced with mocked proof endpoint
 EXP-NF-007 | DvPDestinationProof payload mismatch | PASS: mismatch reproduced with mocked proof endpoint
 EXP-NF-008 | Initiator handler Groth16 adversarial test | PASS: real Groth16 verification; nullifier tree binding and Merkle root/path verification tested independently
 EXP-NF-009 | Destination handler Groth16 adversarial test | PASS: real Groth16 verification; nullifier tree binding and Merkle root/path verification tested independently
+EXP-NF-010 | Solidity Merkle root history isolation after rollover | PASS: each tested root accepted only under its originating tree number; mock Poseidon used
+EXP-NF-011 | Solidity nullifier storage tree isolation | PASS: same numeric nullifier independently stored under tree 0 and tree 1
+EXP-NF-012 | Production vault receipt nullifier tree selection | PASS: EnygmaErc20CoinVault.nullifyFromReceipt recorded the nullifier under each receipt's supplied tree number; placeholder root and zero proof used
