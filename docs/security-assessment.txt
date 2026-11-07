@@ -1,5 +1,5 @@
 SECURITY ASSESSMENT
-UPDATED: 2026-11-06
+UPDATED: 2026-11-07
 
 CLASSIFICATION
 
@@ -31,6 +31,10 @@ ESTABLISHED BY EXPERIMENTS
    recorded a nullifier under the tree number supplied in the
    receipt statement. The test used a placeholder nonzero root
    and zero proof coordinates. See EXP-NF-012.
+9. EXP-NF-013 passed the same tree-1 proof through the real local
+   client method and initiator handler with supplied stTreeNumber
+   values of both 1 and 0. This establishes acceptance at that
+   tested client-to-handler boundary.
 
 ESTABLISHED BY SOURCE INSPECTION
 
@@ -53,8 +57,10 @@ ESTABLISHED BY SOURCE INSPECTION
 
 NOT ESTABLISHED
 
-1. A live 256-deposit rollover demonstration.
-2. A live post-rollover mismatched proof request.
+1. A deployed or production-environment 256-deposit rollover
+   demonstration.
+2. A post-rollover mismatched proof request against a deployed
+   service. EXP-NF-013 is a local integration test.
 3. Production vault rejection of a wrong-tree root through the
    complete receipt proof-validation path.
 4. Successful settlement of a mismatched proof.
@@ -84,10 +90,13 @@ The investigation demonstrates a reproducible client-side
 tree-number consistency gap and a separation between circuit-level
 nullifier verification and tree-specific Merkle-root validation.
 
-The demo source provides a path to a mismatched proof request after
-rollover. Solidity source inspection identifies downstream
-tree-specific validation and a DvP settlement sequence that validates
-both receipts before nullifying inputs and inserting outputs.
+The demo source provides a source-level path to a mismatched proof
+request after rollover. EXP-NF-013 demonstrates that the same tree-1
+proof can pass through the real local client method and initiator
+handler with supplied stTreeNumber 1 or 0. Solidity source inspection
+identifies downstream tree-specific validation and a DvP settlement
+sequence that validates both receipts before nullifying inputs and
+inserting outputs.
 
 Solidity runtime tests now demonstrate tree-specific root-history
 lookup in the inherited Merkle implementation, tree-scoped nullifier

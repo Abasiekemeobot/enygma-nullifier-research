@@ -1,6 +1,6 @@
 EXP-NF-011: SOLIDITY NULLIFIER STORAGE TREE ISOLATION
 
-DATE: 2026-11-06
+DATE: 2026-11-07
 TARGET REPOSITORY: /workspaces/Enygma
 TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
 
@@ -40,7 +40,15 @@ or complete DvP settlement.
 
 REPRODUCTION
 cd /workspaces/Enygma/enygma_dvp
-npx hardhat test --no-compile test/merkle-root-history.test.js
+set -o pipefail
+npx hardhat test --no-compile test/merkle-root-history.test.js --grep "stores the same nullifier independently under different tree numbers" 2>&1 | tee /tmp/EXP-NF-011.log
 
-The test file contains three tests; this experiment corresponds to
-the second test in the suite.
+RESULT FROM FILTERED RUN
+1 passing (113ms)
+
+ARCHIVED EVIDENCE
+- evidence/runtime-logs/EXP-NF-011.log
+- evidence/runtime-logs/EXP-NF-011-record.txt
+
+The log contains the complete filtered test output. The record contains
+the exact command and complete terminal output.

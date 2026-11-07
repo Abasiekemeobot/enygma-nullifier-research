@@ -254,7 +254,7 @@ This is separate from the coin-vault note-tree root and nullifier checks.
 
 7.5 Solidity runtime experiments
 
-Three Hardhat runtime tests passed on 6 November 2026.
+Three Hardhat runtime tests passed on 7 November 2026.
 
 EXP-NF-010 tested the inherited Merkle implementation after a depth-2
 rollover. A root registered under tree 0 was valid only under tree 0;
@@ -280,6 +280,24 @@ These tests establish runtime behaviour for the tested Merkle
 storage and receipt-processing paths. They do not establish complete
 production vault rejection of a wrong-tree root through proof
 validation or end-to-end settlement.
+
+7.6 Real rollover client-to-initiator-handler integration
+
+EXP-NF-013 exercised a depth-8 rollover, the real
+GnarkClient.DvPInitiatorProofFromSalts method, and the real local
+initiator HTTP handler.
+
+The test inserted 255 filler leaves and then a test note, producing
+a tree-1 Merkle proof. It submitted the same tree-1 root and path
+twice: once with supplied stTreeNumber 1 and once with supplied
+stTreeNumber 0. Both requests were accepted by the handler.
+
+This establishes acceptance of the mismatched supplied tree number
+at the tested local client-to-handler boundary. It does not establish
+acceptance by Solidity, complete DvP settlement, or unauthorized
+asset movement. The complete test output and exact reproduction
+command are archived in evidence/runtime-logs/EXP-NF-013.log and
+evidence/runtime-logs/EXP-NF-013-record.txt.
 
 8. SECURITY ASSESSMENT
 
@@ -352,11 +370,14 @@ settlement sequence that validates both receipts before nullifying
 inputs and inserting outputs. Asset-group membership also has a
 separate tree-zero root check with a registered-vault alternative.
 
-Runtime tests demonstrate tree-specific root-history lookup in the
-inherited Merkle implementation, tree-scoped nullifier storage, and
-production vault receipt nullifier tree selection. However, complete
-production vault proof validation and end-to-end settlement of a
-mismatched proof have not been demonstrated. Exploitability,
-double-spending, and unauthorized asset movement remain unestablished.
+Solidity runtime tests demonstrate tree-specific root-history
+lookup in the inherited Merkle implementation, tree-scoped nullifier
+storage, and production vault receipt nullifier tree selection.
+EXP-NF-013 separately demonstrates acceptance of a mismatched supplied
+tree number at the real local client-to-initiator-handler boundary.
+However, complete production vault proof validation and end-to-end
+settlement of a mismatched proof have not been demonstrated.
+Exploitability, double-spending, and unauthorized asset movement
+remain unestablished.
 
 This is not a confirmed double-spend vulnerability.

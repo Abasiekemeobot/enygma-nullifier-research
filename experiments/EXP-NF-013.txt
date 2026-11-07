@@ -1,0 +1,88 @@
+EXP-NF-013: REAL ROLLOVER CLIENT-TO-INITIATOR-HANDLER INTEGRATION
+
+DATE: 2026-11-07
+TARGET REPOSITORY: /workspaces/Enygma
+TARGET COMMIT: a43586596644dd035ecd9e28ce6bc9022c1dec62
+
+HYPOTHESIS
+A valid Merkle proof originating from tree 1 can pass through the real
+client proof-construction method and real initiator HTTP handler even
+when the caller supplies tree number 0 instead of the proof's tree
+number, because the circuit verifies the supplied nullifier tree
+number separately from the supplied Merkle root and path.
+
+TEST
+Test:
+TestEXP_NF_RolloverProofThroughRealClientAndHandler
+
+Test file in the target working tree:
+enygma_dvp/gnark_circuits/server/circuits/dvpInit/rollover_client_integration_test.go
+
+The test constructed a depth-8 Merkle tree, inserted 255 filler leaves,
+and then inserted the test note, causing rollover to tree 1. It obtained
+the note's Merkle proof and passed it through the actual
+GnarkClient.DvPInitiatorProofFromSalts method to the real local
+initiator HTTP handler.
+
+The same tree-1 proof and root were submitted in two cases:
+1. supplied stTreeNumber = 1
+2. supplied stTreeNumber = 0
+
+OBSERVED RESULT
+Case 1:
+ACCEPTED: proof.TreeNumber=1, supplied stTreeNumber=1,
+pathIndex=0,
+root=1371602851558025342865393370676951847673836242957059103849660797034436605441
+
+Case 2:
+ACCEPTED: proof.TreeNumber=1, supplied stTreeNumber=0,
+pathIndex=0,
+root=1371602851558025342865393370676951847673836242957059103849660797034436605441
+
+The test completed successfully:
+PASS
+ok enygma_dvp/gnark_circuits/server/circuits/dvpInit 3.516s
+
+RESULT
+PASS. The real client method and real initiator handler accepted the
+same valid tree-1 Merkle root/path with both the matching tree number
+and the mismatched supplied tree number.
+
+This is direct runtime evidence that the tested client-to-handler path
+does not enforce equality between proof.TreeNumber and the caller's
+stTreeNumber. The handler verifies the proof using the supplied tree
+number for nullifier construction while independently verifying the
+provided Merkle root/path.
+
+REPRODUCTION
+cd /workspaces/Enygma/enygma_dvp/gnark_circuits
+gofmt -w server/circuits/dvpInit/rollover_client_integration_test.go
+cp go.mod /tmp/gnark-rollover.mod
+cp go.sum /tmp/gnark-rollover.sum
+go mod edit -modfile=/tmp/gnark-rollover.mod \
+  -require=github.com/raylsnetwork/enygma_dvp/src@v0.0.0 \
+  -replace=github.com/raylsnetwork/enygma_dvp/src=/workspaces/Enygma/enygma_dvp/src
+set -o pipefail
+go test -mod=mod -modfile=/tmp/gnark-rollover.mod \
+  ./server/circuits/dvpInit \
+  -run '^TestEXP_NF_RolloverProofThroughRealClientAndHandler$' \
+  -count=1 -v 2>&1 | tee /tmp/EXP-NF-ROLLOVER-INTEGRATION.log
+
+ARCHIVED EVIDENCE
+- evidence/runtime-logs/EXP-NF-013.log
+- evidence/runtime-logs/EXP-NF-013-record.txt
+
+The log contains the complete test output. The record contains the
+exact command and complete terminal output.
+
+LIMITATIONS
+This is a local integration test using the real client method and real
+initiator handler, not a live deployed service or complete application
+workflow. It establishes acceptance at the proof-handler boundary.
+It does not demonstrate Solidity vault acceptance, complete DvP
+settlement, successful exploitation, double-spending, or unauthorized
+asset movement.
+
+The test file is an experimental addition in the target working tree;
+the target implementation source baseline remains commit
+a43586596644dd035ecd9e28ce6bc9022c1dec62.

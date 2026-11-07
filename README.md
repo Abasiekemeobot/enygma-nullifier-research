@@ -8,7 +8,7 @@ proof construction, proof handlers, and Solidity vault validation?
 
 ## Scope
 
-This repository records source analysis and twelve experiments conducted
+This repository records source analysis and thirteen experiments conducted
 against the Enygma repository at commit:
 
 `a43586596644dd035ecd9e28ce6bc9022c1dec62`
@@ -16,7 +16,8 @@ against the Enygma repository at commit:
 The investigation covers native nullifier derivation, path-index range
 enforcement, Merkle tree rollover, client proof construction, Groth16
 handler verification, demo rollover reachability, Solidity vault and
-DvP settlement logic, and three Solidity runtime experiments.
+DvP settlement logic, three Solidity runtime experiments, and one
+real rollover client-to-initiator-handler integration experiment.
 
 ## Principal findings
 
@@ -52,6 +53,9 @@ DvP settlement logic, and three Solidity runtime experiments.
     selects the nullifier namespace using the receipt tree number.
     The test used a placeholder root and zero proof coordinates.
     See EXP-NF-012.
+13. A real rollover integration test passed the same tree-1 proof
+    through the client method and initiator handler with supplied
+    tree numbers 1 and 0. See EXP-NF-013.
 
 ## Security conclusion
 
@@ -64,8 +68,10 @@ post-rollover proof request. Solidity runtime tests demonstrate
 tree-specific root-history lookup in the inherited Merkle implementation,
 tree-scoped nullifier storage, and production vault receipt nullifier
 tree selection. The production receipt test used a placeholder root
-and zero proof coordinates; complete production vault proof validation
-and end-to-end mismatched-tree settlement remain untested.
+and zero proof coordinates. EXP-NF-013 demonstrates the mismatch at
+the local client-to-initiator-handler boundary, but complete production
+vault proof validation and end-to-end mismatched-tree settlement remain
+untested.
 
 No successful exploitation, double-spending, unauthorized asset
 movement, or invalid on-chain settlement has been demonstrated.
