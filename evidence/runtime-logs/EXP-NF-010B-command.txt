@@ -1,0 +1,16 @@
+EXPERIMENT: EXP-NF-010B
+PURPOSE: Verify Merkle root-history isolation after rollover using generated production Poseidon libraries.
+
+SYNTAX CHECK:
+node --check test/merkle-root-history.test.js
+
+EXECUTION COMMAND:
+cd /workspaces/Enygma/enygma_dvp
+set -o pipefail
+npx hardhat test --no-compile test/merkle-root-history.test.js --grep "generated production Poseidon libraries" 2>&1 | tee /tmp/EXP-NF-010B.log
+
+RESULT:
+1 passing (845ms)
+
+POSEIDON CROSS-CHECK:
+On-chain and circomlibjs outputs matched exactly.

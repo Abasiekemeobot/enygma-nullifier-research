@@ -281,6 +281,23 @@ storage and receipt-processing paths. They do not establish complete
 production vault rejection of a wrong-tree root through proof
 validation or end-to-end settlement.
 
+EXP-NF-010B provides a separate production-Poseidon confirmation.
+The test deployed the generated PoseidonT3 and PoseidonT5 libraries,
+linked them to PoseidonWrapper, and compared the on-chain result for
+input [123, 456] against an independent circomlibjs calculation.
+Both implementations returned the same hash:
+19620391833206800292073497099357851348339828238212863168390691880932172496143.
+The test then initialized the inherited Merkle harness at depth 2,
+inserted leaves 101, 102, and 103 into tree 0, and inserted leaf 104
+after rollover into tree 1. Both trees recognized their own roots
+and rejected the other tree's root. The test passed with generated
+production Poseidon libraries rather than RuntimeMockPoseidon.
+
+EXP-NF-010B strengthens the root-history evidence. It does not test
+complete production vault proof validation or end-to-end DvP
+settlement of a mismatched-tree proof. See the preserved source and
+runtime record in evidence/source/ and evidence/runtime-logs/.
+
 7.6 Real rollover client-to-initiator-handler integration
 
 EXP-NF-013 exercised a depth-8 rollover, the real

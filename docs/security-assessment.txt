@@ -1,5 +1,5 @@
 SECURITY ASSESSMENT
-UPDATED: 2026-11-07
+UPDATED: 2026-11-08
 
 CLASSIFICATION
 
@@ -35,6 +35,13 @@ ESTABLISHED BY EXPERIMENTS
    client method and initiator handler with supplied stTreeNumber
    values of both 1 and 0. This establishes acceptance at that
    tested client-to-handler boundary.
+
+10. EXP-NF-010B independently confirmed tree-specific root-history
+    isolation after rollover using the generated production Poseidon
+    libraries. The deployed wrapper's hash for [123, 456] matched
+    circomlibjs exactly. Each tested root was accepted only under
+    its originating tree number. This remains a Merkle harness test,
+    not complete production vault proof validation.
 
 ESTABLISHED BY SOURCE INSPECTION
 
@@ -99,7 +106,8 @@ sequence that validates both receipts before nullifying inputs and
 inserting outputs.
 
 Solidity runtime tests now demonstrate tree-specific root-history
-lookup in the inherited Merkle implementation, tree-scoped nullifier
+lookup in the inherited Merkle implementation with both mock and
+generated production Poseidon libraries, tree-scoped nullifier
 storage, and production vault receipt nullifier tree selection.
 However, the production receipt test used a placeholder root and zero
 proof coordinates. Complete production vault proof validation and

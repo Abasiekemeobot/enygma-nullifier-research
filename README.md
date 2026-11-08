@@ -8,7 +8,7 @@ proof construction, proof handlers, and Solidity vault validation?
 
 ## Scope
 
-This repository records source analysis and thirteen experiments conducted
+This repository records source analysis and fourteen experiment records conducted
 against the Enygma repository at commit:
 
 `a43586596644dd035ecd9e28ce6bc9022c1dec62`
@@ -16,8 +16,9 @@ against the Enygma repository at commit:
 The investigation covers native nullifier derivation, path-index range
 enforcement, Merkle tree rollover, client proof construction, Groth16
 handler verification, demo rollover reachability, Solidity vault and
-DvP settlement logic, three Solidity runtime experiments, and one
-real rollover client-to-initiator-handler integration experiment.
+DvP settlement logic, four Solidity runtime test executions
+(including a separate production-Poseidon root-history confirmation),
+and one real rollover client-to-initiator-handler integration experiment.
 
 ## Principal findings
 
@@ -46,14 +47,19 @@ real rollover client-to-initiator-handler integration experiment.
 9. Asset-group membership has a separate tree-zero root check, but
    registered-vault membership is an alternative condition.
 10. A Solidity runtime test confirmed tree-specific root-history lookup
-    after rollover in the inherited Merkle implementation. See EXP-NF-010.
-11. A Solidity runtime test confirmed separate tree-scoped nullifier
+    after rollover in the inherited Merkle implementation using mock
+    Poseidon. See EXP-NF-010.
+11. A separate runtime test repeated the root-history isolation test
+    using generated production Poseidon libraries and independently
+    matched the on-chain Poseidon output against circomlibjs.
+    See EXP-NF-010B.
+12. A Solidity runtime test confirmed separate tree-scoped nullifier
     storage. See EXP-NF-011.
-12. A production vault runtime test confirmed that nullifyFromReceipt
+13. A production vault runtime test confirmed that nullifyFromReceipt
     selects the nullifier namespace using the receipt tree number.
     The test used a placeholder root and zero proof coordinates.
     See EXP-NF-012.
-13. A real rollover integration test passed the same tree-1 proof
+14. A real rollover integration test passed the same tree-1 proof
     through the client method and initiator handler with supplied
     tree numbers 1 and 0. See EXP-NF-013.
 
@@ -65,9 +71,10 @@ verification and Merkle-root/path verification.
 
 The demo findings establish source-level reachability, not a live
 post-rollover proof request. Solidity runtime tests demonstrate
-tree-specific root-history lookup in the inherited Merkle implementation,
-tree-scoped nullifier storage, and production vault receipt nullifier
-tree selection. The production receipt test used a placeholder root
+tree-specific root-history lookup in the inherited Merkle implementation
+using both mock and generated production Poseidon libraries, tree-scoped
+nullifier storage, and production vault receipt nullifier tree selection.
+The production receipt test used a placeholder root
 and zero proof coordinates. EXP-NF-013 demonstrates the mismatch at
 the local client-to-initiator-handler boundary, but complete production
 vault proof validation and end-to-end mismatched-tree settlement remain
@@ -84,5 +91,7 @@ vulnerability.
 - `docs/research-scope.txt` - research question and evidence boundary.
 - `docs/security-assessment.txt` - security classification and limitations.
 - `evidence/experiment-register.txt` - experiment index.
+- `evidence/runtime-logs/` - preserved runtime outputs and commands.
+- `evidence/source/` - preserved experiment source snapshot.
 - `experiments/` - experiment records.
 - `source-analysis/` - source-level analysis and call-path findings.

@@ -177,3 +177,37 @@ The successful runtime tests supersede the earlier statement that
 Solidity runtime testing was blocked. They do not supersede the
 limitations concerning complete production proof validation and
 end-to-end mismatched-tree settlement.
+
+
+10. PRODUCTION POSEIDON ROOT-HISTORY CONFIRMATION — 8 NOVEMBER 2026
+
+EXP-NF-010B was executed successfully using the existing generated
+Poseidon artifacts and Hardhat with --no-compile. The test deployed
+PoseidonT3 and PoseidonT5 directly from their generated artifact
+ABI and bytecode, linked them into PoseidonWrapper, and compared
+the on-chain Poseidon result for [123, 456] with circomlibjs.
+The values matched exactly.
+
+The test then exercised depth-2 Merkle rollover using the
+MerkleRootHistoryHarness initialized with the production wrapper.
+After leaves 101–103 were inserted into tree 0 and leaf 104 caused
+rollover into tree 1, each tree accepted its own root and rejected
+the other tree's root. Result: 1 passing (845ms).
+
+The initial attempt using ethers.getContractFactory for PoseidonT3
+failed because Hardhat rejected the generated artifact as a valid
+artifact parameter. The test was corrected to instantiate ethers
+ContractFactory directly with the artifact ABI, bytecode, and
+deployer signer. The successful run used --no-compile; no Solidity
+compilation was performed for this experiment.
+
+The duplicate-definition warnings for InvalidNumberOfOutputs()
+were emitted but were nonfatal. The successful output, execution
+command, and source snapshot are preserved under evidence/runtime-logs/
+and evidence/source/.
+
+This experiment confirms root-history isolation in the tested
+inherited Merkle implementation with generated production Poseidon
+libraries. It does not establish complete production vault proof
+validation, mismatched-tree settlement, exploitability, or
+unauthorized asset movement.

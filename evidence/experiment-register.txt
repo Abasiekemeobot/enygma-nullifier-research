@@ -12,3 +12,5 @@ EXP-NF-010 | Solidity Merkle root history isolation after rollover | PASS: each 
 EXP-NF-011 | Solidity nullifier storage tree isolation | PASS: same numeric nullifier independently stored under tree 0 and tree 1
 EXP-NF-012 | Production vault receipt nullifier tree selection | PASS: EnygmaErc20CoinVault.nullifyFromReceipt recorded the nullifier under each receipt's supplied tree number; placeholder root and zero proof used
 EXP-NF-013 | Real rollover client-to-initiator-handler integration | PASS: the real client method and real initiator handler accepted the same tree-1 proof with supplied stTreeNumber 1 and 0
+
+EXP-NF-010B | Production Poseidon Merkle root-history isolation | PASS: generated PoseidonT3 and PoseidonT5 libraries deployed; on-chain Poseidon hash matched circomlibjs; after depth-2 rollover, each root was accepted only under its originating tree number
